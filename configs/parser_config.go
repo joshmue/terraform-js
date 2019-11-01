@@ -31,24 +31,7 @@ func (p *Parser) LoadConfigFileOverride(path string) (*File, hcl.Diagnostics) {
 
 func (p *Parser) loadConfigFile(path string, override bool) (*File, hcl.Diagnostics) {
 	p.p.AddFile(path, &hcl.File{})
-//	p.LoadHCLFile(path) // Plain diags does not work. WHY?
-//	if body == nil {
-//		return nil, diags
-//	}
-//
-//	diags := ,
-//	}
 	file := &File{}
-//	for _, r := range file.ManagedResources {
-//		fmt.Printf("%#v\n", *r.Managed)
-//		for k, a := range r.Config.(*hclsyntax.Body).Attributes {
-//			fmt.Printf("%s:---- %#v\n", k, *a)
-//			fmt.Printf("%s:---- %#v\n", k, a.Expr)
-//			for _, p := range a.Expr.(*hclsyntax.TemplateExpr).Parts {
-//				fmt.Printf("%#v\n", p.(*hclsyntax.LiteralValueExpr))
-//			}
-//		}
-//	}
 
 	resources, err := p.execFile(path)
 	if err != nil {
