@@ -1,7 +1,11 @@
 package configs
 
 import (
+	"fmt"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/hashicorp/terraform/addrs"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // LoadConfigFile reads the file at the given path and parses it as a config
@@ -31,6 +35,8 @@ func (p *Parser) LoadConfigFileOverride(path string) (*File, hcl.Diagnostics) {
 
 func (p *Parser) loadConfigFile(path string, override bool) (*File, hcl.Diagnostics) {
 
+	//return nil, nil
+
 	body, diags := p.LoadHCLFile(path)
 	if body == nil {
 		return nil, diags
@@ -38,45 +44,11 @@ func (p *Parser) loadConfigFile(path string, override bool) (*File, hcl.Diagnost
 
 	file := &File{}
 
-	var reqDiags hcl.Diagnostics
-	file.CoreVersionConstraints, reqDiags = sniffCoreVersionRequirements(body)
-	diags = append(diags, reqDiags...)
-
 	content, contentDiags := body.Content(configFileSchema)
 	diags = append(diags, contentDiags...)
 
 	for _, block := range content.Blocks {
 		switch block.Type {
-
-		case "terraform":
-			content, contentDiags := block.Body.Content(terraformBlockSchema)
-			diags = append(diags, contentDiags...)
-
-			// We ignore the "terraform_version" attribute here because
-			// sniffCoreVersionRequirements already dealt with that above.
-
-			for _, innerBlock := range content.Blocks {
-				switch innerBlock.Type {
-
-				case "backend":
-					backendCfg, cfgDiags := decodeBackendBlock(innerBlock)
-					diags = append(diags, cfgDiags...)
-					if backendCfg != nil {
-						file.Backends = append(file.Backends, backendCfg)
-					}
-
-				case "required_providers":
-					reqs, reqsDiags := decodeRequiredProvidersBlock(innerBlock)
-					diags = append(diags, reqsDiags...)
-					file.ProviderRequirements = append(file.ProviderRequirements, reqs...)
-
-				default:
-					// Should never happen because the above cases should be exhaustive
-					// for all block type names in our schema.
-					continue
-
-				}
-			}
 
 		case "provider":
 			cfg, cfgDiags := decodeProviderBlock(block)
@@ -132,6 +104,50 @@ func (p *Parser) loadConfigFile(path string, override bool) (*File, hcl.Diagnost
 
 		}
 	}
+//	for _, r := range file.ManagedResources {
+//		fmt.Printf("%#v\n", *r.Managed)
+//		for k, a := range r.Config.(*hclsyntax.Body).Attributes {
+//			fmt.Printf("%s:---- %#v\n", k, *a)
+//			fmt.Printf("%s:---- %#v\n", k, a.Expr)
+//			for _, p := range a.Expr.(*hclsyntax.TemplateExpr).Parts {
+//				fmt.Printf("%#v\n", p.(*hclsyntax.LiteralValueExpr))
+//			}
+//		}
+//	}
+	_ = fmt.Printf
+	myRes := &Resource{
+		Mode: addrs.ManagedResourceMode,
+		Name: "Foobar",
+		Type: "local_file",
+		Config: &hclsyntax.Body{
+			Attributes: hclsyntax.Attributes{
+				"content": &hclsyntax.Attribute{
+					Name: "content",
+					Expr: &hclsyntax.TemplateExpr{
+						Parts: []hclsyntax.Expression{
+							&hclsyntax.LiteralValueExpr{
+								Val: cty.StringVal("best content ever, really"),
+							},
+						},
+					},
+				},
+				"filename": &hclsyntax.Attribute{
+					Name: "filenane",
+					Expr: &hclsyntax.TemplateExpr{
+						Parts: []hclsyntax.Expression{
+							&hclsyntax.LiteralValueExpr{
+								Val: cty.StringVal("/tmp/bestfileever.txt"),
+							},
+						},
+					},
+				},
+			},
+		},
+		Managed: &ManagedResource{
+
+		},
+	}
+	file.ManagedResources = append(file.ManagedResources, myRes)
 
 	return file, diags
 }
