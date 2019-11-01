@@ -3,9 +3,6 @@ package configs
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/hashicorp/terraform/addrs"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // LoadConfigFile reads the file at the given path and parses it as a config
@@ -35,75 +32,80 @@ func (p *Parser) LoadConfigFileOverride(path string) (*File, hcl.Diagnostics) {
 
 func (p *Parser) loadConfigFile(path string, override bool) (*File, hcl.Diagnostics) {
 
-	//return nil, nil
-
-	body, diags := p.LoadHCLFile(path)
-	if body == nil {
-		return nil, diags
-	}
-
+	_, diags := p.LoadHCLFile(path) // Plain diags does not work. WHY?
+//	if body == nil {
+//		return nil, diags
+//	}
+//
+//	diags := hcl.Diagnostics{
+//		{
+//			Severity: hcl.DiagError,
+//			Summary:  "using experimental stuff!",
+//		},
+//	}
 	file := &File{}
+	//diags := hcl.Diagnostics{}
 
-	content, contentDiags := body.Content(configFileSchema)
-	diags = append(diags, contentDiags...)
-
-	for _, block := range content.Blocks {
-		switch block.Type {
-
-		case "provider":
-			cfg, cfgDiags := decodeProviderBlock(block)
-			diags = append(diags, cfgDiags...)
-			if cfg != nil {
-				file.ProviderConfigs = append(file.ProviderConfigs, cfg)
-			}
-
-		case "variable":
-			cfg, cfgDiags := decodeVariableBlock(block, override)
-			diags = append(diags, cfgDiags...)
-			if cfg != nil {
-				file.Variables = append(file.Variables, cfg)
-			}
-
-		case "locals":
-			defs, defsDiags := decodeLocalsBlock(block)
-			diags = append(diags, defsDiags...)
-			file.Locals = append(file.Locals, defs...)
-
-		case "output":
-			cfg, cfgDiags := decodeOutputBlock(block, override)
-			diags = append(diags, cfgDiags...)
-			if cfg != nil {
-				file.Outputs = append(file.Outputs, cfg)
-			}
-
-		case "module":
-			cfg, cfgDiags := decodeModuleBlock(block, override)
-			diags = append(diags, cfgDiags...)
-			if cfg != nil {
-				file.ModuleCalls = append(file.ModuleCalls, cfg)
-			}
-
-		case "resource":
-			cfg, cfgDiags := decodeResourceBlock(block)
-			diags = append(diags, cfgDiags...)
-			if cfg != nil {
-				file.ManagedResources = append(file.ManagedResources, cfg)
-			}
-
-		case "data":
-			cfg, cfgDiags := decodeDataBlock(block)
-			diags = append(diags, cfgDiags...)
-			if cfg != nil {
-				file.DataResources = append(file.DataResources, cfg)
-			}
-
-		default:
-			// Should never happen because the above cases should be exhaustive
-			// for all block type names in our schema.
-			continue
-
-		}
-	}
+//	content, contentDiags := body.Content(configFileSchema)
+//	diags = append(diags, contentDiags...)
+//
+//	for _, block := range content.Blocks {
+//		switch block.Type {
+//
+//		case "provider":
+//			cfg, cfgDiags := decodeProviderBlock(block)
+//			diags = append(diags, cfgDiags...)
+//			if cfg != nil {
+//				file.ProviderConfigs = append(file.ProviderConfigs, cfg)
+//			}
+//
+//		case "variable":
+//			cfg, cfgDiags := decodeVariableBlock(block, override)
+//			diags = append(diags, cfgDiags...)
+//			if cfg != nil {
+//				file.Variables = append(file.Variables, cfg)
+//			}
+//
+//		case "locals":
+//			defs, defsDiags := decodeLocalsBlock(block)
+//			diags = append(diags, defsDiags...)
+//			file.Locals = append(file.Locals, defs...)
+//
+//		case "output":
+//			cfg, cfgDiags := decodeOutputBlock(block, override)
+//			diags = append(diags, cfgDiags...)
+//			if cfg != nil {
+//				file.Outputs = append(file.Outputs, cfg)
+//			}
+//
+//		case "module":
+//			cfg, cfgDiags := decodeModuleBlock(block, override)
+//			diags = append(diags, cfgDiags...)
+//			if cfg != nil {
+//				file.ModuleCalls = append(file.ModuleCalls, cfg)
+//			}
+//
+//		case "resource":
+//			cfg, cfgDiags := decodeResourceBlock(block)
+//			diags = append(diags, cfgDiags...)
+//			if cfg != nil {
+//				file.ManagedResources = append(file.ManagedResources, cfg)
+//			}
+//
+//		case "data":
+//			cfg, cfgDiags := decodeDataBlock(block)
+//			diags = append(diags, cfgDiags...)
+//			if cfg != nil {
+//				file.DataResources = append(file.DataResources, cfg)
+//			}
+//
+//		default:
+//			// Should never happen because the above cases should be exhaustive
+//			// for all block type names in our schema.
+//			continue
+//
+//		}
+//	}
 //	for _, r := range file.ManagedResources {
 //		fmt.Printf("%#v\n", *r.Managed)
 //		for k, a := range r.Config.(*hclsyntax.Body).Attributes {
@@ -115,41 +117,14 @@ func (p *Parser) loadConfigFile(path string, override bool) (*File, hcl.Diagnost
 //		}
 //	}
 	_ = fmt.Printf
-	myRes := &Resource{
-		Mode: addrs.ManagedResourceMode,
-		Name: "Foobar",
-		Type: "local_file",
-		Config: &hclsyntax.Body{
-			Attributes: hclsyntax.Attributes{
-				"content": &hclsyntax.Attribute{
-					Name: "content",
-					Expr: &hclsyntax.TemplateExpr{
-						Parts: []hclsyntax.Expression{
-							&hclsyntax.LiteralValueExpr{
-								Val: cty.StringVal("best content ever, really"),
-							},
-						},
-					},
-				},
-				"filename": &hclsyntax.Attribute{
-					Name: "filenane",
-					Expr: &hclsyntax.TemplateExpr{
-						Parts: []hclsyntax.Expression{
-							&hclsyntax.LiteralValueExpr{
-								Val: cty.StringVal("/tmp/bestfileever.txt"),
-							},
-						},
-					},
-				},
-			},
-		},
-		Managed: &ManagedResource{
 
-		},
+	resources, err := execFile(path)
+	if err != nil {
+		fmt.Println(err)
+		return nil, diags
 	}
-	file.ManagedResources = append(file.ManagedResources, myRes)
-
-	return file, diags
+	file.ManagedResources = resources
+	return file, nil
 }
 
 // sniffCoreVersionRequirements does minimal parsing of the given body for

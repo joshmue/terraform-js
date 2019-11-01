@@ -108,6 +108,7 @@ require (
 	github.com/pkg/errors v0.8.0
 	github.com/posener/complete v1.2.1
 	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829 // indirect
+	github.com/robertkrimen/otto v0.0.0-20180617131154-15f95af6e78d
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
 	github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d // indirect
 	github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a // indirect
@@ -133,6 +134,7 @@ require (
 	google.golang.org/api v0.9.0
 	google.golang.org/grpc v1.21.1
 	gopkg.in/ini.v1 v1.42.0 // indirect
+	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 )
 
