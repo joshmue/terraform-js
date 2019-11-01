@@ -2,13 +2,12 @@ package configs
 
 import (
 	"github.com/robertkrimen/otto"
-	"io/ioutil"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform/addrs"
 	"github.com/zclconf/go-cty/cty"
 )
 
-func execFile(path string) ([]*Resource, error) {
+func (p *Parser) execFile(path string) ([]*Resource, error) {
 	vm := otto.New()
 	_, err := vm.Eval(`
 resources = [];
@@ -22,7 +21,7 @@ function make(rType, rName, rParams) {
 	if err != nil {
 		return nil, err
 	}
-	data, err := ioutil.ReadFile(path)
+	data, err := p.fs.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
