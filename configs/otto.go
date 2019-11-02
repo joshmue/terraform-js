@@ -1,10 +1,10 @@
 package configs
 
 import (
-	"github.com/robertkrimen/otto"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform/addrs"
+	"github.com/robertkrimen/otto"
 	"github.com/zclconf/go-cty/cty"
 	"strings"
 )
@@ -119,33 +119,33 @@ func makeResource(rType string, rName string, rParams map[string]string, deps []
 		for _, part := range strings.Split(dep, ".") {
 			if pos == 0 {
 				trav = append(trav, hcl.TraverseRoot{
-					Name:     part,
+					Name: part,
 					SrcRange: hcl.Range{
 						Start: hcl.Pos{
-							Line: 1,
-							Column: pos+1,
-							Byte: pos,
+							Line:   1,
+							Column: pos + 1,
+							Byte:   pos,
 						},
 						End: hcl.Pos{
-							Line: 1,
-							Column: pos+len(part)+1,
-							Byte: pos+len(part),
+							Line:   1,
+							Column: pos + len(part) + 1,
+							Byte:   pos + len(part),
 						},
 					},
 				})
 			} else {
 				trav = append(trav, hcl.TraverseAttr{
-					Name:     part,
+					Name: part,
 					SrcRange: hcl.Range{
 						Start: hcl.Pos{
-							Line: 1,
-							Column: pos+1,
-							Byte: pos,
+							Line:   1,
+							Column: pos + 1,
+							Byte:   pos,
 						},
 						End: hcl.Pos{
-							Line: 1,
-							Column: pos+len(part)+1,
-							Byte: pos+len(part),
+							Line:   1,
+							Column: pos + len(part) + 1,
+							Byte:   pos + len(part),
 						},
 					},
 				})
@@ -155,15 +155,13 @@ func makeResource(rType string, rName string, rParams map[string]string, deps []
 		travs = append(travs, trav)
 	}
 	return &Resource{
-		Mode: addrs.ManagedResourceMode,
-		Name: rName,
-		Type: rType,
+		Mode:      addrs.ManagedResourceMode,
+		Name:      rName,
+		Type:      rType,
 		DependsOn: travs,
 		Config: &hclsyntax.Body{
 			Attributes: attrs,
 		},
-		Managed: &ManagedResource{
-
-		},
+		Managed: &ManagedResource{},
 	}
 }
