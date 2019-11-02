@@ -2,20 +2,23 @@ package configs
 
 import (
 	"github.com/robertkrimen/otto"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform/addrs"
 	"github.com/zclconf/go-cty/cty"
+	"strings"
 )
 
 func (p *Parser) execFile(path string) ([]*Resource, error) {
 	vm := otto.New()
 	_, err := vm.Eval(`
 resources = [];
-function make(rType, rName, rParams) {
+function make(rType, rName, rParams, rDeps) {
   resources.push({
     type: rType,
     name: rName,
-    params: rParams
+    params: rParams || {},
+    deps: rDeps || []
   });
 }`)
 	if err != nil {
@@ -73,12 +76,29 @@ function make(rType, rName, rParams) {
 				return nil, err
 			}
 		}
-		resources = append(resources, makeResource(rType, rName, params))
+		rDepsVal, err := rObj.Get("deps")
+		if err != nil {
+			return nil, err
+		}
+		rDeps := rDepsVal.Object()
+		deps := []string{}
+		for _, dKey := range rDeps.Keys() {
+			dVal, err := rDeps.Get(dKey)
+			if err != nil {
+				return nil, err
+			}
+			dep, err := dVal.ToString()
+			if err != nil {
+				return nil, err
+			}
+			deps = append(deps, dep)
+		}
+		resources = append(resources, makeResource(rType, rName, params, deps))
 	}
 	return resources, nil
 }
 
-func makeResource(rType string, rName string, rParams map[string]string) *Resource {
+func makeResource(rType string, rName string, rParams map[string]string, deps []string) *Resource {
 	attrs := hclsyntax.Attributes{}
 	for key, value := range rParams {
 		attrs[key] = &hclsyntax.Attribute{
@@ -92,10 +112,53 @@ func makeResource(rType string, rName string, rParams map[string]string) *Resour
 			},
 		}
 	}
+	travs := []hcl.Traversal{}
+	for _, dep := range deps {
+		trav := hcl.Traversal{}
+		pos := 0
+		for _, part := range strings.Split(dep, ".") {
+			if pos == 0 {
+				trav = append(trav, hcl.TraverseRoot{
+					Name:     part,
+					SrcRange: hcl.Range{
+						Start: hcl.Pos{
+							Line: 1,
+							Column: pos+1,
+							Byte: pos,
+						},
+						End: hcl.Pos{
+							Line: 1,
+							Column: pos+len(part)+1,
+							Byte: pos+len(part),
+						},
+					},
+				})
+			} else {
+				trav = append(trav, hcl.TraverseAttr{
+					Name:     part,
+					SrcRange: hcl.Range{
+						Start: hcl.Pos{
+							Line: 1,
+							Column: pos+1,
+							Byte: pos,
+						},
+						End: hcl.Pos{
+							Line: 1,
+							Column: pos+len(part)+1,
+							Byte: pos+len(part),
+						},
+					},
+				})
+			}
+			pos += len(part)
+		}
+		travs = append(travs, trav)
+	}
 	return &Resource{
 		Mode: addrs.ManagedResourceMode,
 		Name: rName,
 		Type: rType,
+		DependsOn: travs,
 		Config: &hclsyntax.Body{
 			Attributes: attrs,
 		},
